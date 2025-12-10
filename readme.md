@@ -24,29 +24,52 @@ To build this project, you need:
 1. Clone this repository:
 ```bash
 git clone <repository-url>
-cd wasm-image-compressor
+cd image-compressor
 ```
 
-2. Build the WebAssembly module:
+2. Build the WebAssembly module using Make:
 ```bash
-GOOS=js GOARCH=wasm go build -o image_compressor.wasm main.go
+make
 ```
 
-3. Copy the required wasm_exec.js file:
-```bash
-cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" .
-```
+This command will:
+- Compile `main.go` into `image_compressor.wasm`
+- Copy the required `wasm_exec.js` file from your Go installation
 
 ## Running the Project
 
-Start a local web server:
+Start a local web server using Make:
 ```bash
-python3 -m http.server 8080
+make serve
 ```
 
 Then open your browser and navigate to:
 ```
 http://localhost:8080
+```
+
+## Makefile Commands
+
+The project includes a Makefile with the following commands:
+
+- `make` or `make all` - Build the WebAssembly module and copy wasm_exec.js
+- `make clean` - Remove build artifacts (image_compressor.wasm and wasm_exec.js)
+- `make serve` - Start a local HTTP server on port 8080
+
+### Development Workflow
+
+```bash
+# Build the project
+make
+
+# Start the development server
+make serve
+
+# After making changes to main.go, rebuild
+make
+
+# Clean build artifacts
+make clean
 ```
 
 ## Project Structure
