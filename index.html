@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebAssembly Image Compressor</title>
+    <title>Image Compressor</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>WebAssembly Image Compressor</h1>
+    <h1>Image Compressor</h1>
     <div class="container">
         <div class="upload-container" id="upload-area">
             <p>Drag & drop an image here or click to browse</p>
@@ -15,7 +15,7 @@
         </div>
         
         <div class="controls" id="controls" style="display:none">
-            <div class="quality-slider">
+            <div class="quality-slider" id="quality-control">
                 <span>Quality:</span>
                 <input type="range" id="quality" min="1" max="100" value="80">
                 <span id="quality-value">80%</span>
@@ -24,6 +24,15 @@
                 <span>Resize:</span>
                 <input type="range" id="resize" min="10" max="100" value="100">
                 <span id="resize-value">100%</span>
+            </div>
+            <div class="quality-slider">
+                <span>Algorithm:</span>
+                <select id="algorithm">
+                    <option value="NearestNeighbor">Nearest Neighbor (Lowest Quality)</option>
+                    <option value="ApproxBiLinear">Approx BiLinear (Low Quality)</option>
+                    <option value="BiLinear" selected>BiLinear (High Quality)</option>
+                    <option value="CatmullRom">Catmull-Rom (Best Quality)</option>
+                </select>
             </div>
             <button id="compress-btn">Compress Image</button>
         </div>
@@ -36,11 +45,15 @@
         <div class="status" id="status"></div>
         
         <div class="image-preview" id="image-preview"></div>
+        
+        <div class="comparison-info">
+            <p class="info-text">💡 Drag the slider or click anywhere to compare images</p>
+        </div>
     </div>
 
     <!-- Load the Go WASM runtime -->
     <script src="wasm_exec.js"></script>
-    <!-- Load our application script -->
-    <script src="script.js"></script>
+    <!-- Load our application script (compiled from TypeScript) -->
+    <script type="module" src="dist/script.js?v=2"></script>
 </body>
 </html>
