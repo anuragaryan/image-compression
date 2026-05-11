@@ -7,49 +7,63 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Image Compressor</h1>
-    <div class="container">
-        <div class="upload-container" id="upload-area">
-            <p>Drag & drop an image here or click to browse</p>
-            <input type="file" id="file-input" accept="image/*" style="display:none">
-        </div>
-        
-        <div class="controls" id="controls" style="display:none">
-            <div class="quality-slider" id="quality-control">
-                <span>Quality:</span>
-                <input type="range" id="quality" min="1" max="100" value="80">
-                <span id="quality-value">80%</span>
+    <main class="app-shell">
+        <section class="hero">
+            <p class="eyebrow">Browser-based image compression</p>
+            <h1>Compress images locally</h1>
+        </section>
+
+        <section class="workspace">
+            <div class="upload-container" id="upload-area">
+                <div class="upload-copy">
+                    <p class="upload-title">Drop an image here</p>
+                    <p class="upload-subtitle">or click to choose a file</p>
+                </div>
+                <div class="upload-status" id="upload-status">Loading engine...</div>
+                <input type="file" id="file-input" accept="image/*" style="display:none">
             </div>
-            <div class="quality-slider">
-                <span>Resize:</span>
-                <input type="range" id="resize" min="10" max="100" value="100">
-                <span id="resize-value">100%</span>
+
+            <div class="controls" id="controls" style="display:none">
+                <div class="control-group" id="quality-control">
+                    <label for="quality">Quality</label>
+                    <div class="control-input">
+                        <input type="range" id="quality" min="1" max="100" value="80">
+                        <span class="control-value" id="quality-value">80%</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="resize">Resize</label>
+                    <div class="control-input">
+                        <input type="range" id="resize" min="10" max="100" value="100">
+                        <span class="control-value" id="resize-value">100%</span>
+                    </div>
+                </div>
+                <div class="control-group control-group-wide">
+                    <label for="algorithm">Resampling</label>
+                    <select id="algorithm">
+                        <option value="NearestNeighbor">Nearest Neighbor - Lowest quality</option>
+                        <option value="ApproxBiLinear">Approx. BiLinear - Low quality</option>
+                        <option value="BiLinear" selected>BiLinear - High quality</option>
+                        <option value="CatmullRom">Catmull-Rom - Best quality</option>
+                    </select>
+                </div>
+                <button id="compress-btn" disabled>Compress</button>
             </div>
-            <div class="quality-slider">
-                <span>Algorithm:</span>
-                <select id="algorithm">
-                    <option value="NearestNeighbor">Nearest Neighbor (Lowest Quality)</option>
-                    <option value="ApproxBiLinear">Approx BiLinear (Low Quality)</option>
-                    <option value="BiLinear" selected>BiLinear (High Quality)</option>
-                    <option value="CatmullRom">Catmull-Rom (Best Quality)</option>
-                </select>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing image...</p>
             </div>
-            <button id="compress-btn">Compress Image</button>
-        </div>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Processing image...</p>
-        </div>
-        
-        <div class="status" id="status"></div>
-        
-        <div class="image-preview" id="image-preview"></div>
-        
-        <div class="comparison-info">
-            <p class="info-text">💡 Drag the slider or click anywhere to compare images</p>
-        </div>
-    </div>
+
+            <div class="status" id="status"></div>
+
+            <div class="image-preview" id="image-preview"></div>
+
+            <div class="comparison-info" id="comparison-info" style="display:none">
+                <p class="info-text">Click or drag across the image to compare the result.</p>
+            </div>
+        </section>
+    </main>
 
     <!-- Load the Go WASM runtime -->
     <script src="wasm_exec.js"></script>

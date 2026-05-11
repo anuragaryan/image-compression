@@ -166,17 +166,32 @@ var compressBtn = document.getElementById("compress-btn");
 var imagePreview = document.getElementById("image-preview");
 var loading = document.getElementById("loading");
 var statusElement = document.getElementById("status");
+var comparisonInfo = document.getElementById("comparison-info");
+var uploadStatus = document.getElementById("upload-status");
+function updateCompressButtonState() {
+  compressBtn.disabled = !originalImage || !wasmReady;
+}
+function updateUploadStatus() {
+  uploadStatus.textContent = wasmReady ? "" : "Loading engine...";
+  uploadStatus.style.display = wasmReady ? "none" : "inline-flex";
+}
 async function initWasm() {
   try {
-    statusElement.textContent = "Loading WebAssembly module...";
+    statusElement.textContent = "Loading compression engine...";
+    updateCompressButtonState();
+    updateUploadStatus();
     const go = new window.Go;
     const result = await WebAssembly.instantiateStreaming(fetch("image_compressor.wasm"), go.importObject);
     go.run(result.instance);
     wasmReady = true;
-    statusElement.textContent = "WebAssembly module loaded successfully!";
+    statusElement.textContent = "";
+    updateCompressButtonState();
+    updateUploadStatus();
   } catch (err) {
     console.error("Failed to load WASM:", err);
-    statusElement.textContent = "Failed to load WebAssembly module. Check console for details.";
+    statusElement.textContent = "Could not load the compression engine. Check the console for details.";
+    updateCompressButtonState();
+    updateUploadStatus();
   }
 }
 function handleFileSelect(file) {
@@ -185,13 +200,16 @@ function handleFileSelect(file) {
     return;
   }
   originalImage = file;
-  controls.style.display = "flex";
+  controls.style.display = "";
+  uploadArea.classList.remove("is-dragover");
+  updateCompressButtonState();
   const isJPEG = file.type === "image/jpeg" || file.type === "image/jpg";
   qualityControl.style.display = isJPEG ? "flex" : "none";
   if (comparisonSlider) {
     comparisonSlider.destroy();
     comparisonSlider = null;
   }
+  comparisonInfo.style.display = "none";
   const reader = new FileReader;
   reader.onload = function(e) {
     if (!e.target?.result)
@@ -199,8 +217,8 @@ function handleFileSelect(file) {
     const formatInfo = isJPEG ? "JPEG (lossy)" : "PNG (lossless)";
     imagePreview.innerHTML = `
             <div class="preview-item">
-                <h3>Original Image</h3>
-                <img src="${e.target.result}" alt="Original Image">
+                <h3>Selected image</h3>
+                <img src="${e.target.result}" alt="Selected image preview">
                 <div class="info">
                     <p>Format: ${formatInfo}</p>
                     <p>Size: ${formatBytes(file.size)}</p>
@@ -254,17 +272,18 @@ async function compressImage() {
                 <button class="download-btn" id="download-btn">Download Compressed Image</button>
             `;
       imagePreview.appendChild(statsContainer);
+      comparisonInfo.style.display = "block";
       const downloadBtn = document.getElementById("download-btn");
       downloadBtn.addEventListener("click", () => downloadImage(compressedUrl));
     };
     originalReader.readAsDataURL(originalImage);
-    statusElement.textContent = "Image compressed successfully!";
+    statusElement.textContent = "";
   } catch (err) {
     console.error("Compression failed:", err);
-    statusElement.textContent = "Compression failed. Check console for details.";
+    statusElement.textContent = "Compression failed. Check the console for details.";
   } finally {
     loading.style.display = "none";
-    compressBtn.disabled = false;
+    updateCompressButtonState();
   }
 }
 function downloadImage(url) {
@@ -288,14 +307,14 @@ fileInput.addEventListener("change", (e) => {
 });
 uploadArea.addEventListener("dragover", (e) => {
   e.preventDefault();
-  uploadArea.style.borderColor = "#007bff";
+  uploadArea.classList.add("is-dragover");
 });
 uploadArea.addEventListener("dragleave", () => {
-  uploadArea.style.borderColor = "#ccc";
+  uploadArea.classList.remove("is-dragover");
 });
 uploadArea.addEventListener("drop", (e) => {
   e.preventDefault();
-  uploadArea.style.borderColor = "#ccc";
+  uploadArea.classList.remove("is-dragover");
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
     handleFileSelect(e.dataTransfer.files[0]);
   }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -52,11 +53,15 @@ func compressImage(this js.Value, args []js.Value) interface{} {
 
 // processImage compresses and resizes the image
 func processImage(inputData []byte, quality int, resizePercent int, algorithm string) ([]byte, error) {
+	orientation := exifOrientation(inputData)
+
 	// Detect image format and decode
 	img, format, err := image.Decode(bytes.NewReader(inputData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
+
+	img = applyOrientation(img, orientation)
 
 	// Encode based on original format
 	out, err := encodeImage(img, format, quality)
@@ -160,6 +165,146 @@ func encodeImage(img image.Image, format string, quality int) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func exifOrientation(data []byte) int {
+	if len(data) < 4 || data[0] != 0xFF || data[1] != 0xD8 {
+		return 1
+	}
+
+	for i := 2; i+4 <= len(data); {
+		if data[i] != 0xFF {
+			break
+		}
+
+		marker := data[i+1]
+		i += 2
+
+		if marker == 0xD9 || marker == 0xDA {
+			break
+		}
+
+		if i+2 > len(data) {
+			break
+		}
+
+		segmentLength := int(binary.BigEndian.Uint16(data[i : i+2]))
+		if segmentLength < 2 || i+segmentLength > len(data) {
+			break
+		}
+
+		if marker == 0xE1 && segmentLength >= 8 {
+			segment := data[i+2 : i+segmentLength]
+			if bytes.HasPrefix(segment, []byte("Exif\x00\x00")) {
+				if orientation := readEXIFOrientation(segment[6:]); orientation >= 1 && orientation <= 8 {
+					return orientation
+				}
+			}
+		}
+
+		i += segmentLength
+	}
+
+	return 1
+}
+
+func readEXIFOrientation(tiff []byte) int {
+	if len(tiff) < 8 {
+		return 1
+	}
+
+	var order binary.ByteOrder
+	switch string(tiff[:2]) {
+	case "II":
+		order = binary.LittleEndian
+	case "MM":
+		order = binary.BigEndian
+	default:
+		return 1
+	}
+
+	if order.Uint16(tiff[2:4]) != 0x002A {
+		return 1
+	}
+
+	ifdOffset := int(order.Uint32(tiff[4:8]))
+	if ifdOffset < 0 || ifdOffset+2 > len(tiff) {
+		return 1
+	}
+
+	entryCount := int(order.Uint16(tiff[ifdOffset : ifdOffset+2]))
+	entriesStart := ifdOffset + 2
+
+	for entry := 0; entry < entryCount; entry++ {
+		entryOffset := entriesStart + entry*12
+		if entryOffset+12 > len(tiff) {
+			return 1
+		}
+
+		tag := order.Uint16(tiff[entryOffset : entryOffset+2])
+		if tag != 0x0112 {
+			continue
+		}
+
+		typeID := order.Uint16(tiff[entryOffset+2 : entryOffset+4])
+		count := order.Uint32(tiff[entryOffset+4 : entryOffset+8])
+		if typeID != 3 || count < 1 {
+			return 1
+		}
+
+		return int(order.Uint16(tiff[entryOffset+8 : entryOffset+10]))
+	}
+
+	return 1
+}
+
+func applyOrientation(img image.Image, orientation int) image.Image {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	if orientation < 2 || orientation > 8 {
+		return img
+	}
+
+	dstWidth := width
+	dstHeight := height
+	if orientation >= 5 && orientation <= 8 {
+		dstWidth = height
+		dstHeight = width
+	}
+
+	dst := image.NewNRGBA(image.Rect(0, 0, dstWidth, dstHeight))
+
+	for y := 0; y < dstHeight; y++ {
+		for x := 0; x < dstWidth; x++ {
+			srcX, srcY := orientedSourcePoint(x, y, width, height, orientation)
+			dst.Set(x, y, img.At(bounds.Min.X+srcX, bounds.Min.Y+srcY))
+		}
+	}
+
+	return dst
+}
+
+func orientedSourcePoint(x int, y int, width int, height int, orientation int) (int, int) {
+	switch orientation {
+	case 2:
+		return width - 1 - x, y
+	case 3:
+		return width - 1 - x, height - 1 - y
+	case 4:
+		return x, height - 1 - y
+	case 5:
+		return y, x
+	case 6:
+		return y, height - 1 - x
+	case 7:
+		return width - 1 - y, height - 1 - x
+	case 8:
+		return width - 1 - y, x
+	default:
+		return x, y
+	}
 }
 
 func imageSizeInBytes(img image.Image) int {

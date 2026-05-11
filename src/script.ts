@@ -32,13 +32,26 @@ const compressBtn = document.getElementById('compress-btn') as HTMLButtonElement
 const imagePreview = document.getElementById('image-preview') as HTMLElement;
 const loading = document.getElementById('loading') as HTMLElement;
 const statusElement = document.getElementById('status') as HTMLElement;
+const comparisonInfo = document.getElementById('comparison-info') as HTMLElement;
+const uploadStatus = document.getElementById('upload-status') as HTMLElement;
+
+function updateCompressButtonState(): void {
+    compressBtn.disabled = !originalImage || !wasmReady;
+}
+
+function updateUploadStatus(): void {
+    uploadStatus.textContent = wasmReady ? '' : 'Loading engine...';
+    uploadStatus.style.display = wasmReady ? 'none' : 'inline-flex';
+}
 
 /**
  * Initialize WebAssembly module
  */
 async function initWasm(): Promise<void> {
     try {
-        statusElement.textContent = "Loading WebAssembly module...";
+        statusElement.textContent = 'Loading compression engine...';
+        updateCompressButtonState();
+        updateUploadStatus();
         
         const go = new window.Go();
         const result = await WebAssembly.instantiateStreaming(
@@ -48,11 +61,15 @@ async function initWasm(): Promise<void> {
         
         go.run(result.instance);
         wasmReady = true;
-        
-        statusElement.textContent = "WebAssembly module loaded successfully!";
+
+        statusElement.textContent = '';
+        updateCompressButtonState();
+        updateUploadStatus();
     } catch (err) {
         console.error('Failed to load WASM:', err);
-        statusElement.textContent = "Failed to load WebAssembly module. Check console for details.";
+        statusElement.textContent = "Could not load the compression engine. Check the console for details.";
+        updateCompressButtonState();
+        updateUploadStatus();
     }
 }
 
@@ -66,7 +83,9 @@ function handleFileSelect(file: File): void {
     }
 
     originalImage = file;
-    controls.style.display = 'flex';
+    controls.style.display = '';
+    uploadArea.classList.remove('is-dragover');
+    updateCompressButtonState();
     
     // Show/hide quality slider based on image type
     // PNG is lossless, so quality slider doesn't affect file size
@@ -79,6 +98,8 @@ function handleFileSelect(file: File): void {
         comparisonSlider.destroy();
         comparisonSlider = null;
     }
+
+    comparisonInfo.style.display = 'none';
     
     // Display original image preview
     const reader = new FileReader();
@@ -88,8 +109,8 @@ function handleFileSelect(file: File): void {
         const formatInfo = isJPEG ? 'JPEG (lossy)' : 'PNG (lossless)';
         imagePreview.innerHTML = `
             <div class="preview-item">
-                <h3>Original Image</h3>
-                <img src="${e.target.result}" alt="Original Image">
+                <h3>Selected image</h3>
+                <img src="${e.target.result}" alt="Selected image preview">
                 <div class="info">
                     <p>Format: ${formatInfo}</p>
                     <p>Size: ${formatBytes(file.size)}</p>
@@ -175,6 +196,7 @@ async function compressImage(): Promise<void> {
                 <button class="download-btn" id="download-btn">Download Compressed Image</button>
             `;
             imagePreview.appendChild(statsContainer);
+            comparisonInfo.style.display = 'block';
             
             // Add download functionality
             const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement;
@@ -182,13 +204,13 @@ async function compressImage(): Promise<void> {
         };
         originalReader.readAsDataURL(originalImage);
         
-        statusElement.textContent = "Image compressed successfully!";
+        statusElement.textContent = '';
     } catch (err) {
         console.error('Compression failed:', err);
-        statusElement.textContent = "Compression failed. Check console for details.";
+        statusElement.textContent = "Compression failed. Check the console for details.";
     } finally {
         loading.style.display = 'none';
-        compressBtn.disabled = false;
+        updateCompressButtonState();
     }
 }
 
@@ -223,16 +245,16 @@ fileInput.addEventListener('change', (e: Event) => {
 
 uploadArea.addEventListener('dragover', (e: DragEvent) => {
     e.preventDefault();
-    uploadArea.style.borderColor = '#007bff';
+    uploadArea.classList.add('is-dragover');
 });
 
 uploadArea.addEventListener('dragleave', () => {
-    uploadArea.style.borderColor = '#ccc';
+    uploadArea.classList.remove('is-dragover');
 });
 
 uploadArea.addEventListener('drop', (e: DragEvent) => {
     e.preventDefault();
-    uploadArea.style.borderColor = '#ccc';
+    uploadArea.classList.remove('is-dragover');
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
         handleFileSelect(e.dataTransfer.files[0]);
     }
