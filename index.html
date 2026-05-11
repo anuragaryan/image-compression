@@ -4,7 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Compressor</title>
-    <link rel="stylesheet" href="styles.css">
+    <script>
+        const { pathname } = window.location;
+        const lastSlashIndex = pathname.lastIndexOf('/');
+        const lastSegment = pathname.slice(lastSlashIndex + 1);
+        const basePath = pathname.endsWith('/')
+            ? pathname
+            : lastSegment.includes('.')
+                ? pathname.slice(0, lastSlashIndex + 1)
+                : `${pathname}/`;
+        const base = document.createElement('base');
+        base.href = basePath;
+        document.head.appendChild(base);
+    </script>
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
     <main class="app-shell">
@@ -68,6 +81,6 @@
     <!-- Load the Go WASM runtime -->
     <script src="wasm_exec.js"></script>
     <!-- Load our application script (compiled from TypeScript) -->
-    <script type="module" src="dist/script.js?v=2"></script>
+    <script type="module" crossorigin="anonymous" src="dist/script.js?v=2"></script>
 </body>
 </html>

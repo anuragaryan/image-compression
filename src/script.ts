@@ -52,10 +52,11 @@ async function initWasm(): Promise<void> {
         statusElement.textContent = 'Loading compression engine...';
         updateCompressButtonState();
         updateUploadStatus();
+        const wasmUrl = new URL('../image_compressor.wasm', import.meta.url);
         
         const go = new window.Go();
         const result = await WebAssembly.instantiateStreaming(
-            fetch('image_compressor.wasm'), 
+            fetch(wasmUrl), 
             go.importObject
         );
         
