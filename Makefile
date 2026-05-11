@@ -23,7 +23,11 @@ debug: $(WASM_EXEC_JS)
 	@echo "Debug build complete!"
 
 $(WASM_EXEC_JS):
-	cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" .
+	@if [ -f "$$(go env GOROOT)/lib/wasm/wasm_exec.js" ]; then \
+		cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" .; \
+	else \
+		cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" .; \
+	fi
 
 # Build TypeScript files using Bun
 build-ts:

@@ -16,7 +16,7 @@ This project implements a client-side image compressor using WebAssembly (WASM) 
 
 To build this project, you need:
 
-1. Go 1.21 or later with WebAssembly support
+1. Go 1.26 or later with WebAssembly support
 2. A modern web browser with WebAssembly support
 
 ## Building the Project
@@ -35,6 +35,8 @@ make
 This command will:
 - Compile `main.go` into `image_compressor.wasm`
 - Copy the required `wasm_exec.js` file from your Go installation
+
+The build supports both current Go layouts (`lib/wasm/wasm_exec.js`) and older ones (`misc/wasm/wasm_exec.js`).
 
 ## Running the Project
 
